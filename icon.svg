@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#f5f0e8"/>
+  <rect x="60" y="60" width="392" height="392" rx="16" fill="none" stroke="#1a1209" stroke-width="18"/>
+  <!-- 3x3 grid lines -->
+  <line x1="191" y1="60" x2="191" y2="452" stroke="#1a1209" stroke-width="9"/>
+  <line x1="321" y1="60" x2="321" y2="452" stroke="#1a1209" stroke-width="9"/>
+  <line x1="60" y1="191" x2="452" y2="191" stroke="#1a1209" stroke-width="9"/>
+  <line x1="60" y1="321" x2="452" y2="321" stroke="#1a1209" stroke-width="9"/>
+  <!-- inner lines lighter -->
+  <line x1="104" y1="60" x2="104" y2="191" stroke="#a89880" stroke-width="4"/>
+  <line x1="147" y1="60" x2="147" y2="191" stroke="#a89880" stroke-width="4"/>
+  <!-- 数 character in center -->
+  <text x="256" y="300" font-family="serif" font-size="160" font-weight="bold" fill="#c0392b" text-anchor="middle">数</text>
+</svg>

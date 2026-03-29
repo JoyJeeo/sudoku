@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="数独">
+<meta name="theme-color" content="#1a1209">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>数独闯关</title>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f0e8;
+  --bg2: #ede8dc;
+  --surface: #ffffff;
+  --ink: #1a1209;
+  --ink2: #4a3f2f;
+  --muted: #9a8f7e;
+  --border: #d4cabc;
+  --border-strong: #a89880;
+  --easy: #2c7a4b;
+  --medium: #c07a10;
+  --hard: #c0392b;
+  --cell: min(10vw, 54px);
+  --shadow: 0 4px 24px rgba(26,18,9,0.10);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Noto Sans SC', sans-serif;
+  min-height: 100dvh;
+  display: flex; flex-direction: column; align-items: center;
+  overflow-x: hidden;
+}
+body::before {
+  content:''; position:fixed; inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  pointer-events:none; z-index:0;
+}
+.screen { display:none; position:relative; z-index:1; width:100%; max-width:440px; padding:0 14px 32px; flex-direction:column; align-items:center; }
+.screen.active { display:flex; animation: fadeUp 0.28s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* HOME */
+#homeScreen { gap:0; padding-top:36px; }
+.logo-wrap { text-align:center; margin-bottom:28px; }
+.logo-main { font-family:'Shippori Mincho',serif; font-size:54px; font-weight:700; color:var(--ink); letter-spacing:14px; display:block; line-height:1; }
+.logo-en { font-size:11px; letter-spacing:5px; color:var(--muted); margin-top:6px; text-transform:uppercase; display:block; }
+.logo-ornament { display:flex; align-items:center; gap:10px; justify-content:center; margin-top:10px; }
+.orn-line { width:40px; height:1px; background:linear-gradient(90deg,transparent,var(--border-strong)); }
+.orn-line.r { background:linear-gradient(90deg,var(--border-strong),transparent); }
+.orn-dot { width:5px; height:5px; border-radius:50%; background:var(--border-strong); }
+
+.progress-card { width:100%; background:var(--surface); border-radius:18px; padding:18px 20px; box-shadow:var(--shadow); border:1px solid var(--border); margin-bottom:20px; }
+.card-title { font-size:11px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:14px; }
+.prog-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.prog-row:last-child { margin-bottom:0; }
+.prog-lbl { font-size:12px; font-weight:600; width:28px; }
+.prog-lbl.e { color:var(--easy); } .prog-lbl.m { color:var(--medium); } .prog-lbl.h { color:var(--hard); }
+.prog-track { flex:1; height:7px; background:var(--bg2); border-radius:99px; overflow:hidden; }
+.prog-fill { height:100%; border-radius:99px; transition:width 0.6s cubic-bezier(.4,0,.2,1); }
+.prog-fill.e { background:linear-gradient(90deg,#5cb88a,var(--easy)); }
+.prog-fill.m { background:linear-gradient(90deg,#e5a840,var(--medium)); }
+.prog-fill.h { background:linear-gradient(90deg,#e56b5a,var(--hard)); }
+.prog-cnt { font-size:11px; color:var(--muted); width:38px; text-align:right; }
+
+.chap-list { width:100%; display:flex; flex-direction:column; gap:10px; }
+.sec-label { font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--muted); margin-bottom:2px; padding-left:2px; }
+.chap-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:15px 16px; cursor:pointer; display:flex; align-items:center; gap:14px; box-shadow:var(--shadow); position:relative; overflow:hidden; transition:transform 0.15s; }
+.chap-card:active { transform:scale(0.98); }
+.chap-card::after { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; border-radius:4px 0 0 4px; }
+.chap-card.e::after { background:var(--easy); } .chap-card.m::after { background:var(--medium); } .chap-card.h::after { background:var(--hard); }
+.chap-icon { width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+.chap-card.e .chap-icon { background:rgba(44,122,75,0.1); }
+.chap-card.m .chap-icon { background:rgba(192,122,16,0.1); }
+.chap-card.h .chap-icon { background:rgba(192,57,43,0.1); }
+.chap-info { flex:1; }
+.chap-name { font-weight:700; font-size:15px; margin-bottom:3px; }
+.chap-card.e .chap-name { color:var(--easy); } .chap-card.m .chap-name { color:var(--medium); } .chap-card.h .chap-name { color:var(--hard); }
+.chap-desc { font-size:12px; color:var(--muted); }
+.chap-right { text-align:right; flex-shrink:0; }
+.chap-num { font-family:'Shippori Mincho',serif; font-size:22px; font-weight:700; }
+.chap-card.e .chap-num { color:var(--easy); } .chap-card.m .chap-num { color:var(--medium); } .chap-card.h .chap-num { color:var(--hard); }
+.chap-of { font-size:11px; color:var(--muted); }
+
+/* LEVEL SELECT */
+#levelScreen { gap:0; padding-top:18px; }
+.lv-header { width:100%; display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+.back-btn { background:var(--surface); border:1px solid var(--border); border-radius:10px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--ink2); flex-shrink:0; transition:background 0.15s; }
+.back-btn:active { background:var(--bg2); }
+.lv-header-title { font-family:'Shippori Mincho',serif; font-size:22px; font-weight:700; flex:1; }
+.diff-pill { padding:4px 12px; border-radius:99px; font-size:11px; font-weight:600; letter-spacing:1px; }
+.diff-pill.e { background:rgba(44,122,75,0.12); color:var(--easy); }
+.diff-pill.m { background:rgba(192,122,16,0.12); color:var(--medium); }
+.diff-pill.h { background:rgba(192,57,43,0.12); color:var(--hard); }
+.lv-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; width:100%; }
+.lv-btn { aspect-ratio:1; background:var(--surface); border:1.5px solid var(--border); border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 2px 8px rgba(26,18,9,0.06); transition:all 0.15s; }
+.lv-btn.locked { opacity:0.35; cursor:not-allowed; }
+.lv-btn:not(.locked):active { transform:scale(0.92); }
+.diff-e .lv-btn { color:var(--easy); } .diff-e .lv-btn.done { background:rgba(44,122,75,0.07); border-color:rgba(44,122,75,0.35); }
+.diff-m .lv-btn { color:var(--medium); } .diff-m .lv-btn.done { background:rgba(192,122,16,0.07); border-color:rgba(192,122,16,0.35); }
+.diff-h .lv-btn { color:var(--hard); } .diff-h .lv-btn.done { background:rgba(192,57,43,0.07); border-color:rgba(192,57,43,0.35); }
+.lv-btn.next-lv { box-shadow:0 0 0 2.5px currentColor; }
+.lv-n { font-family:'Shippori Mincho',serif; font-size:20px; font-weight:700; line-height:1; }
+.lv-stars { font-size:8px; margin-top:3px; min-height:11px; }
+
+/* GAME */
+#gameScreen { gap:10px; padding-top:12px; }
+.g-topbar { width:100%; display:flex; align-items:center; gap:10px; }
+.g-back { background:var(--surface); border:1px solid var(--border); border-radius:10px; width:34px; height:34px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--ink2); flex-shrink:0; }
+.g-meta { flex:1; }
+.g-sublabel { font-size:11px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; }
+.g-title { font-family:'Shippori Mincho',serif; font-size:17px; font-weight:700; line-height:1.2; }
+.g-stats { display:flex; gap:16px; align-items:center; }
+.gst { text-align:center; }
+.gst-v { font-size:16px; font-weight:700; font-family:'Shippori Mincho',serif; }
+.gst-l { font-size:9px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+
+.board-wrap { width:100%; background:var(--surface); border-radius:20px; padding:10px; box-shadow:var(--shadow); border:1px solid var(--border); }
+.board { display:grid; grid-template-columns:repeat(9,var(--cell)); grid-template-rows:repeat(9,var(--cell)); margin:0 auto; width:fit-content; border:2px solid var(--ink); border-radius:3px; overflow:hidden; }
+.cell { width:var(--cell); height:var(--cell); display:flex; align-items:center; justify-content:center; font-size:calc(var(--cell)*0.44); cursor:pointer; position:relative; transition:background 0.1s; background:#fff; border-right:1px solid #ddd6cc; border-bottom:1px solid #ddd6cc; user-select:none; }
+.cell:nth-child(3n) { border-right:2px solid var(--ink2); }
+.cell:nth-child(9n) { border-right:none; }
+.cell[data-row="2"],.cell[data-row="5"] { border-bottom:2px solid var(--ink2); }
+.cell[data-row="8"] { border-bottom:none; }
+.cell.given { font-weight:700; color:var(--ink); font-family:'Shippori Mincho',serif; }
+.cell.user-e { color:var(--easy); font-weight:500; }
+.cell.user-m { color:var(--medium); font-weight:500; }
+.cell.user-h { color:var(--hard); font-weight:500; }
+.cell.c-err { color:var(--hard) !important; }
+.cell.sel { background:#dbeafe !important; }
+.cell.hl { background:#eff6ff; }
+.cell.sn { background:#f0fdf4; }
+.notes { display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); width:90%; height:90%; }
+.note { font-size:calc(var(--cell)*0.21); display:flex; align-items:center; justify-content:center; color:var(--muted); line-height:1; }
+
+.ctrl-row { width:100%; display:flex; gap:7px; }
+.c-btn { flex:1; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:8px 4px 7px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; font-family:'Noto Sans SC',sans-serif; font-size:10px; color:var(--ink2); box-shadow:0 2px 6px rgba(26,18,9,0.05); transition:all 0.13s; }
+.c-btn svg { width:17px; height:17px; }
+.c-btn:active { transform:scale(0.94); }
+.c-btn.on { background:var(--ink); color:#fff; border-color:var(--ink); }
+.c-btn.hint-on { background:#fef9c3; border-color:#fbbf24; color:#92400e; }
+
+.numpad { display:grid; grid-template-columns:repeat(9,1fr); gap:5px; width:100%; }
+.n-btn { aspect-ratio:1; background:var(--surface); border:1.5px solid var(--border); border-radius:10px; font-size:clamp(15px,4.2vw,22px); font-family:'Shippori Mincho',serif; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--ink); box-shadow:0 2px 5px rgba(26,18,9,0.06); transition:all 0.12s; }
+.n-btn:active { transform:scale(0.88); background:var(--bg2); }
+.n-btn.done { opacity:0.18; pointer-events:none; }
+
+/* WIN */
+.win-layer { display:none; position:fixed; inset:0; z-index:200; background:rgba(245,240,232,0.95); flex-direction:column; align-items:center; justify-content:center; gap:10px; backdrop-filter:blur(14px); }
+.win-layer.show { display:flex; animation:popIn 0.38s cubic-bezier(.34,1.56,.64,1); }
+@keyframes popIn { from { opacity:0; transform:scale(0.87); } to { opacity:1; transform:scale(1); } }
+.win-kanji { font-family:'Shippori Mincho',serif; font-size:80px; color:var(--hard); line-height:1; animation:sway 1.4s ease-in-out infinite alternate; }
+@keyframes sway { from{transform:rotate(-3deg) scale(1);} to{transform:rotate(3deg) scale(1.04);} }
+.win-h { font-family:'Shippori Mincho',serif; font-size:30px; font-weight:700; color:var(--ink); }
+.win-stars { font-size:30px; letter-spacing:4px; }
+.win-div { width:50px; height:1px; background:var(--border-strong); margin:4px 0; }
+.win-info { color:var(--muted); font-size:13px; text-align:center; line-height:1.9; }
+.win-btns { display:flex; gap:10px; margin-top:8px; }
+.w-btn { padding:12px 22px; border-radius:12px; font-family:'Noto Sans SC',sans-serif; font-size:14px; font-weight:500; cursor:pointer; border:none; transition:all 0.14s; }
+.w-btn:active { transform:scale(0.96); }
+.w-btn.pri { background:var(--ink); color:#fff; }
+.w-btn.sec { background:var(--surface); color:var(--ink2); border:1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div class="screen active" id="homeScreen">
+  <div class="logo-wrap">
+    <span class="logo-main">数独</span>
+    <span class="logo-en">Sudoku Journey</span>
+    <div class="logo-ornament">
+      <div class="orn-line"></div><div class="orn-dot"></div><div class="orn-line r"></div>
+    </div>
+  </div>
+  <div class="progress-card">
+    <div class="card-title">闯关进度</div>
+    <div class="prog-row"><span class="prog-lbl e">简单</span><div class="prog-track"><div class="prog-fill e" id="pgE" style="width:0%"></div></div><span class="prog-cnt" id="pcE">0/20</span></div>
+    <div class="prog-row"><span class="prog-lbl m">中等</span><div class="prog-track"><div class="prog-fill m" id="pgM" style="width:0%"></div></div><span class="prog-cnt" id="pcM">0/20</span></div>
+    <div class="prog-row"><span class="prog-lbl h">困难</span><div class="prog-track"><div class="prog-fill h" id="pgH" style="width:0%"></div></div><span class="prog-cnt" id="pcH">0/20</span></div>
+  </div>
+  <div class="chap-list">
+    <div class="sec-label">选择关卡集</div>
+    <div class="chap-card e" onclick="goLvSelect('e')">
+      <div class="chap-icon">🌱</div>
+      <div class="chap-info"><div class="chap-name">初级篇</div><div class="chap-desc">适合入门，提示较多，轻松上手</div></div>
+      <div class="chap-right"><div class="chap-num" id="hE">0</div><div class="chap-of">/ 20 关</div></div>
+    </div>
+    <div class="chap-card m" onclick="goLvSelect('m')">
+      <div class="chap-icon">⛰️</div>
+      <div class="chap-info"><div class="chap-name">进阶篇</div><div class="chap-desc">难度适中，需要一定逻辑技巧</div></div>
+      <div class="chap-right"><div class="chap-num" id="hM">0</div><div class="chap-of">/ 20 关</div></div>
+    </div>
+    <div class="chap-card h" onclick="goLvSelect('h')">
+      <div class="chap-icon">🔥</div>
+      <div class="chap-info"><div class="chap-name">高难篇</div><div class="chap-desc">极具挑战，考验深度推理能力</div></div>
+      <div class="chap-right"><div class="chap-num" id="hH">0</div><div class="chap-of">/ 20 关</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- LEVEL SELECT -->
+<div class="screen" id="levelScreen">
+  <div class="lv-header">
+    <div class="back-btn" onclick="goHome()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    </div>
+    <div class="lv-header-title" id="lvTitle">初级篇</div>
+    <span class="diff-pill e" id="lvPill">简单</span>
+  </div>
+  <div class="lv-grid diff-e" id="lvGrid"></div>
+</div>
+
+<!-- GAME -->
+<div class="screen" id="gameScreen">
+  <div class="g-topbar">
+    <div class="g-back" onclick="backToLv()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    </div>
+    <div class="g-meta">
+      <div class="g-sublabel" id="gSub">简单 · 第 1 关</div>
+      <div class="g-title" id="gTitle">初级篇</div>
+    </div>
+    <div class="g-stats">
+      <div class="gst"><div class="gst-v" id="gTime">00:00</div><div class="gst-l">时间</div></div>
+      <div class="gst"><div class="gst-v" id="gErr">0</div><div class="gst-l">错误</div></div>
+    </div>
+  </div>
+  <div class="board-wrap"><div class="board" id="board"></div></div>
+  <div class="ctrl-row">
+    <button class="c-btn" id="bUndo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10h10a6 6 0 0 1 0 12H7"/><polyline points="3 6 3 10 7 10"/></svg>撤销</button>
+    <button class="c-btn" id="bErase"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 20H7L3 16l10-10 7 7-2.5 2.5"/><path d="M6 18l4-4"/></svg>擦除</button>
+    <button class="c-btn" id="bNote"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>笔记</button>
+    <button class="c-btn" id="bHintToggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>提示关</button>
+    <button class="c-btn" id="bHintUse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>提示(3)</button>
+  </div>
+  <div class="numpad" id="numpad"></div>
+</div>
+
+<!-- WIN -->
+<div class="win-layer" id="winLayer">
+  <div class="win-kanji">完</div>
+  <div class="win-h">关卡完成！</div>
+  <div class="win-stars" id="wStars">⭐⭐⭐</div>
+  <div class="win-div"></div>
+  <div class="win-info" id="wInfo"></div>
+  <div class="win-btns">
+    <button class="w-btn sec" onclick="backToLvFromWin()">关卡列表</button>
+    <button class="w-btn pri" id="bNext" onclick="nextLevel()">下一关</button>
+  </div>
+</div>
+
+<script>
+// PWA Service Worker 注册
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+
+const TOTAL=20;
+const REMOVE={e:34,m:46,h:55};
+const DIFF_LBL={e:'简单',m:'中等',h:'困难'};
+const CHAP_LBL={e:'初级篇',m:'进阶篇',h:'高难篇'};
+
+// localStorage 持久化存储
+let SD=JSON.parse(localStorage.getItem('sudoku_v2')||'null')||{e:{},m:{},h:{}};
+const sv=()=>localStorage.setItem('sudoku_v2',JSON.stringify(SD));
+
+function shuf(a,rng){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor((rng||Math.random)()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+function ok(b,r,c,n){for(let i=0;i<9;i++){if(b[r][i]===n||b[i][c]===n)return false;if(b[3*Math.floor(r/3)+Math.floor(i/3)][3*Math.floor(c/3)+i%3]===n)return false;}return true;}
+function rng4(seed){let s=seed|0;return()=>{s=(Math.imul(1664525,s)+1013904223)|0;return(s>>>0)/4294967296;};}
+function genLevel(diff,idx){
+  const r=rng4(diff.charCodeAt(0)*997+idx*101+7);
+  const sol=Array.from({length:9},()=>Array(9).fill(0));
+  (function fill(b){for(let i=0;i<9;i++)for(let j=0;j<9;j++)if(b[i][j]===0){for(const n of shuf([1,2,3,4,5,6,7,8,9],r)){if(ok(b,i,j,n)){b[i][j]=n;if(fill(b))return true;b[i][j]=0;}}return false;}return true;})(sol);
+  const puz=sol.map(x=>[...x]);
+  const pos=shuf([...Array(81).keys()],r);
+  let rm=0;
+  for(const p of pos){if(rm>=REMOVE[diff])break;puz[Math.floor(p/9)][p%9]=0;rm++;}
+  return{sol,puz};
+}
+
+let curDiff='e',G={};
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function goHome(){stopTimer();refreshHome();show('homeScreen');}
+function goLvSelect(diff){
+  curDiff=diff;stopTimer();
+  const T={e:'初级篇',m:'进阶篇',h:'高难篇'};
+  document.getElementById('lvTitle').textContent=T[diff];
+  const pill=document.getElementById('lvPill');
+  pill.textContent=DIFF_LBL[diff];pill.className=`diff-pill ${diff}`;
+  const grid=document.getElementById('lvGrid');
+  grid.className=`lv-grid diff-${diff}`;grid.innerHTML='';
+  let first=0;for(let i=0;i<TOTAL;i++)if(SD[diff][i])first=i+1;
+  for(let i=0;i<TOTAL;i++){
+    const btn=document.createElement('div');
+    const rec=SD[diff][i];const unlocked=i===0||SD[diff][i-1];
+    btn.className='lv-btn'+(rec?' done':'')+(i===first&&unlocked?' next-lv':'');
+    if(!unlocked){btn.classList.add('locked');btn.innerHTML='<span style="font-size:16px">🔒</span>';}
+    else{
+      const ss=rec?'⭐'.repeat(rec.s||0)+'☆'.repeat(3-(rec.s||0)):'';
+      btn.innerHTML=`<span class="lv-n">${i+1}</span><span class="lv-stars">${ss}</span>`;
+      btn.addEventListener('click',()=>startGame(diff,i));
+    }
+    grid.appendChild(btn);
+  }
+  show('levelScreen');
+}
+function backToLv(){stopTimer();goLvSelect(curDiff);}
+function backToLvFromWin(){document.getElementById('winLayer').classList.remove('show');goLvSelect(curDiff);}
+function nextLevel(){document.getElementById('winLayer').classList.remove('show');if(G.idx+1<TOTAL)startGame(curDiff,G.idx+1);else goLvSelect(curDiff);}
+
+function refreshHome(){
+  ['e','m','h'].forEach(d=>{
+    const cnt=Object.keys(SD[d]).filter(k=>SD[d][k]).length;
+    const pct=(cnt/TOTAL*100).toFixed(1);
+    const C=d.toUpperCase();
+    document.getElementById(`pg${C}`).style.width=pct+'%';
+    document.getElementById(`pc${C}`).textContent=`${cnt}/${TOTAL}`;
+    document.getElementById(`h${C}`).textContent=cnt;
+  });
+}
+
+function startGame(diff,idx){
+  curDiff=diff;stopTimer();
+  const{sol,puz}=genLevel(diff,idx);
+  G={diff,idx,sol,puz,user:puz.map(r=>[...r]),notes:Array.from({length:9},()=>Array.from({length:9},()=>new Set())),sel:null,noteMode:false,hintMode:false,hist:[],errs:0,secs:0,hints:3,done:false,iv:null};
+  document.getElementById('gSub').textContent=`${DIFF_LBL[diff]} · 第 ${idx+1} 关`;
+  document.getElementById('gTitle').textContent=CHAP_LBL[diff];
+  document.getElementById('gErr').textContent='0';
+  document.getElementById('gTime').textContent='00:00';
+  document.getElementById('bNote').classList.remove('on');
+  document.getElementById('bHintToggle').classList.remove('hint-on');
+  document.getElementById('bHintToggle').innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>提示关`;
+  document.getElementById('bHintUse').innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>提示(3)`;
+  document.getElementById('bHintUse').style.opacity='1';document.getElementById('bHintUse').style.pointerEvents='';
+  G.iv=setInterval(()=>{G.secs++;document.getElementById('gTime').textContent=String(Math.floor(G.secs/60)).padStart(2,'0')+':'+String(G.secs%60).padStart(2,'0');},1000);
+  rBoard();rNumpad();show('gameScreen');
+}
+function stopTimer(){if(G.iv){clearInterval(G.iv);G.iv=null;}}
+
+function rBoard(){
+  const bd=document.getElementById('board');bd.innerHTML='';
+  for(let r=0;r<9;r++)for(let c=0;c<9;c++){
+    const el=document.createElement('div');el.className='cell';el.dataset.row=r;el.dataset.col=c;
+    const gv=G.puz[r][c]!==0,v=G.user[r][c];
+    if(v!==0){el.textContent=v;if(gv){el.classList.add('given');}else{el.classList.add(`user-${G.diff}`);if(v!==G.sol[r][c])el.classList.add('c-err');}}
+    else if(G.notes[r][c].size>0){const nd=document.createElement('div');nd.className='notes';for(let n=1;n<=9;n++){const ne=document.createElement('div');ne.className='note';ne.textContent=G.notes[r][c].has(n)?n:'';nd.appendChild(ne);}el.appendChild(nd);}
+    if(G.sel){const[sr,sc]=G.sel;if(r===sr&&c===sc){el.classList.add('sel');}else if(G.hintMode){if(r===sr||c===sc||(Math.floor(r/3)===Math.floor(sr/3)&&Math.floor(c/3)===Math.floor(sc/3)))el.classList.add('hl');else if(v!==0&&v===G.user[sr][sc])el.classList.add('sn');}}
+    el.addEventListener('click',()=>{G.sel=[r,c];rBoard();});
+    bd.appendChild(el);
+  }
+}
+function rNumpad(){
+  const np=document.getElementById('numpad');np.innerHTML='';
+  for(let n=1;n<=9;n++){
+    const btn=document.createElement('button');btn.className='n-btn';btn.textContent=n;
+    let cnt=0;for(let r=0;r<9;r++)for(let c=0;c<9;c++)if(G.user[r][c]===n&&G.sol[r][c]===n)cnt++;
+    if(cnt===9)btn.classList.add('done');
+    btn.addEventListener('click',()=>inputN(n));np.appendChild(btn);
+  }
+}
+function inputN(n){
+  if(!G.sel||G.done)return;const[r,c]=G.sel;if(G.puz[r][c]!==0)return;
+  if(G.noteMode){G.hist.push({t:'note',r,c,ns:new Set(G.notes[r][c])});if(G.notes[r][c].has(n))G.notes[r][c].delete(n);else G.notes[r][c].add(n);}
+  else{G.hist.push({t:'cell',r,c,v:G.user[r][c]});G.user[r][c]=n;G.notes[r][c].clear();if(n!==G.sol[r][c]){G.errs++;document.getElementById('gErr').textContent=G.errs;}checkWin();}
+  rBoard();rNumpad();
+}
+function checkWin(){
+  for(let r=0;r<9;r++)for(let c=0;c<9;c++)if(G.user[r][c]!==G.sol[r][c])return;
+  G.done=true;stopTimer();
+  const stars=G.errs===0?3:G.errs<=3?2:1;
+  const rec=SD[G.diff][G.idx];
+  if(!rec||stars>(rec.s||0)){SD[G.diff][G.idx]={s:stars,t:G.secs};sv();}
+  const m=String(Math.floor(G.secs/60)).padStart(2,'0'),s=String(G.secs%60).padStart(2,'0');
+  document.getElementById('wStars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+  document.getElementById('wInfo').innerHTML=`用时 ${m}:${s}&nbsp;&nbsp;·&nbsp;&nbsp;错误 ${G.errs} 次<br>${CHAP_LBL[G.diff]} · 第 ${G.idx+1} 关`;
+  document.getElementById('bNext').style.display=G.idx+1<TOTAL?'':'none';
+  setTimeout(()=>document.getElementById('winLayer').classList.add('show'),300);
+}
+document.getElementById('bUndo').addEventListener('click',()=>{if(!G.hist||!G.hist.length)return;const h=G.hist.pop();if(h.t==='cell')G.user[h.r][h.c]=h.v;else G.notes[h.r][h.c]=h.ns;rBoard();rNumpad();});
+document.getElementById('bErase').addEventListener('click',()=>{if(!G.sel||G.done)return;const[r,c]=G.sel;if(G.puz[r][c]!==0)return;G.hist.push({t:'cell',r,c,v:G.user[r][c]});G.user[r][c]=0;G.notes[r][c].clear();rBoard();rNumpad();});
+document.getElementById('bNote').addEventListener('click',()=>{if(!G.puz)return;G.noteMode=!G.noteMode;document.getElementById('bNote').classList.toggle('on',G.noteMode);});
+document.getElementById('bHintToggle').addEventListener('click',()=>{
+  if(!G.puz)return;G.hintMode=!G.hintMode;const btn=document.getElementById('bHintToggle');
+  if(G.hintMode){btn.classList.add('hint-on');btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>提示开`;}
+  else{btn.classList.remove('hint-on');btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>提示关`;}
+  rBoard();
+});
+document.getElementById('bHintUse').addEventListener('click',()=>{
+  if(!G.sel||G.done||G.hints<=0)return;const[r,c]=G.sel;if(G.puz[r][c]!==0||G.user[r][c]===G.sol[r][c])return;
+  G.hist.push({t:'cell',r,c,v:G.user[r][c]});G.user[r][c]=G.sol[r][c];G.notes[r][c].clear();G.hints--;
+  const btn=document.getElementById('bHintUse');
+  btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>提示(${G.hints})`;
+  if(G.hints===0){btn.style.opacity='0.25';btn.style.pointerEvents='none';}
+  rBoard();rNumpad();checkWin();
+});
+document.addEventListener('keydown',e=>{
+  if(!G.puz)return;
+  if(e.key>='1'&&e.key<='9')inputN(parseInt(e.key));
+  if((e.key==='Backspace'||e.key==='Delete')&&G.sel&&!G.done){const[r,c]=G.sel;if(G.puz[r][c]!==0)return;G.hist.push({t:'cell',r,c,v:G.user[r][c]});G.user[r][c]=0;G.notes[r][c].clear();rBoard();rNumpad();}
+  const D={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]};
+  if(G.sel&&D[e.key]){const[dr,dc]=D[e.key];G.sel=[Math.max(0,Math.min(8,G.sel[0]+dr)),Math.max(0,Math.min(8,G.sel[1]+dc))];rBoard();e.preventDefault();}
+});
+
+refreshHome();
+</script>
+</body>
+</html>
