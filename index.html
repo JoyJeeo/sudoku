@@ -148,7 +148,33 @@ body::before {
 .numpad { display:grid; grid-template-columns:repeat(9,1fr); gap:5px; width:100%; }
 .n-btn { aspect-ratio:1; background:var(--surface); border:1.5px solid var(--border); border-radius:10px; font-size:clamp(15px,4.2vw,22px); font-family:'Shippori Mincho',serif; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--ink); box-shadow:0 2px 5px rgba(26,18,9,0.06); transition:all 0.12s; }
 .n-btn:active { transform:scale(0.88); background:var(--bg2); }
-.n-btn.done { opacity:0.18; pointer-events:none; }
+.n-btn.done { opacity:0.35; }  /* 仅变灰提示，不禁用点击 */
+
+/* SAVE CODE MODAL */
+.modal-mask { display:none; position:fixed; inset:0; z-index:300; background:rgba(26,18,9,0.45); align-items:flex-end; justify-content:center; backdrop-filter:blur(4px); }
+.modal-mask.show { display:flex; animation:maskIn 0.2s ease; }
+@keyframes maskIn { from{opacity:0} to{opacity:1} }
+.modal-box { background:var(--surface); border-radius:24px 24px 0 0; width:100%; max-width:440px; padding:24px 20px 40px; box-shadow:0 -8px 40px rgba(26,18,9,0.15); animation:slideUp 0.28s cubic-bezier(.34,1.2,.64,1); }
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.modal-drag { width:36px; height:4px; background:var(--border); border-radius:99px; margin:0 auto 20px; }
+.modal-title { font-family:'Shippori Mincho',serif; font-size:20px; font-weight:700; margin-bottom:6px; }
+.modal-desc { font-size:12px; color:var(--muted); margin-bottom:18px; line-height:1.7; }
+.modal-tabs { display:flex; background:var(--bg2); border-radius:10px; padding:3px; gap:3px; margin-bottom:18px; }
+.modal-tab { flex:1; text-align:center; padding:8px; border-radius:8px; font-size:13px; font-weight:500; cursor:pointer; color:var(--muted); transition:all 0.15s; border:none; background:none; font-family:'Noto Sans SC',sans-serif; }
+.modal-tab.active { background:var(--surface); color:var(--ink); box-shadow:0 1px 4px rgba(26,18,9,0.1); }
+.modal-panel { display:none; }
+.modal-panel.active { display:block; }
+.code-box { width:100%; background:var(--bg2); border:1.5px solid var(--border); border-radius:12px; padding:14px; font-family:monospace; font-size:13px; color:var(--ink); word-break:break-all; line-height:1.6; min-height:72px; letter-spacing:0.5px; }
+.code-input { width:100%; background:var(--bg2); border:1.5px solid var(--border); border-radius:12px; padding:14px; font-family:monospace; font-size:13px; color:var(--ink); word-break:break-all; line-height:1.6; min-height:72px; resize:none; outline:none; }
+.code-input:focus { border-color:var(--ink2); }
+.modal-btn-row { display:flex; gap:8px; margin-top:14px; }
+.modal-btn { flex:1; padding:13px; border-radius:12px; font-family:'Noto Sans SC',sans-serif; font-size:14px; font-weight:500; cursor:pointer; border:none; transition:all 0.14s; }
+.modal-btn:active { transform:scale(0.97); }
+.modal-btn.pri { background:var(--ink); color:#fff; }
+.modal-btn.sec { background:var(--bg2); color:var(--ink2); border:1px solid var(--border); }
+.modal-hint { font-size:11px; color:var(--muted); margin-top:10px; text-align:center; }
+.toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(10px); background:var(--ink); color:#fff; padding:10px 20px; border-radius:99px; font-size:13px; opacity:0; transition:all 0.25s; pointer-events:none; z-index:400; white-space:nowrap; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
 /* WIN */
 .win-layer { display:none; position:fixed; inset:0; z-index:200; background:rgba(245,240,232,0.95); flex-direction:column; align-items:center; justify-content:center; gap:10px; backdrop-filter:blur(14px); }
@@ -179,7 +205,13 @@ body::before {
     </div>
   </div>
   <div class="progress-card">
-    <div class="card-title">闯关进度</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div class="card-title" style="margin-bottom:0">闯关进度</div>
+      <button onclick="openSaveModal()" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:11px;font-family:'Noto Sans SC',sans-serif;color:var(--ink2);cursor:pointer;display:flex;align-items:center;gap:5px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        存档码
+      </button>
+    </div>
     <div class="prog-row"><span class="prog-lbl e">简单</span><div class="prog-track"><div class="prog-fill e" id="pgE" style="width:0%"></div></div><span class="prog-cnt" id="pcE">0/20</span></div>
     <div class="prog-row"><span class="prog-lbl m">中等</span><div class="prog-track"><div class="prog-fill m" id="pgM" style="width:0%"></div></div><span class="prog-cnt" id="pcM">0/20</span></div>
     <div class="prog-row"><span class="prog-lbl h">困难</span><div class="prog-track"><div class="prog-fill h" id="pgH" style="width:0%"></div></div><span class="prog-cnt" id="pcH">0/20</span></div>
@@ -242,6 +274,40 @@ body::before {
   <div class="numpad" id="numpad"></div>
 </div>
 
+<!-- SAVE CODE MODAL -->
+<div class="modal-mask" id="saveModal" onclick="closeSaveModal(event)">
+  <div class="modal-box">
+    <div class="modal-drag"></div>
+    <div class="modal-title">存档码</div>
+    <div class="modal-desc">将进度导出为一串文字，复制保存到备忘录。<br>换设备或换浏览器时粘贴导入即可恢复。</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tabExport" onclick="switchTab('export')">导出存档</button>
+      <button class="modal-tab" id="tabImport" onclick="switchTab('import')">导入存档</button>
+    </div>
+    <!-- 导出面板 -->
+    <div class="modal-panel active" id="panelExport">
+      <div class="code-box" id="exportCode">生成中...</div>
+      <div class="modal-btn-row">
+        <button class="modal-btn sec" onclick="closeSaveModal()">关闭</button>
+        <button class="modal-btn pri" onclick="copyCode()">复制存档码</button>
+      </div>
+      <div class="modal-hint">请将存档码保存到手机备忘录</div>
+    </div>
+    <!-- 导入面板 -->
+    <div class="modal-panel" id="panelImport">
+      <textarea class="code-input" id="importInput" placeholder="将存档码粘贴到这里..." rows="4"></textarea>
+      <div class="modal-btn-row">
+        <button class="modal-btn sec" onclick="closeSaveModal()">取消</button>
+        <button class="modal-btn pri" onclick="importCode()">导入恢复</button>
+      </div>
+      <div class="modal-hint" id="importHint">导入后将覆盖当前进度</div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
 <!-- WIN -->
 <div class="win-layer" id="winLayer">
   <div class="win-kanji">完</div>
@@ -266,21 +332,86 @@ const REMOVE={e:34,m:46,h:55};
 const DIFF_LBL={e:'简单',m:'中等',h:'困难'};
 const CHAP_LBL={e:'初级篇',m:'进阶篇',h:'高难篇'};
 
-// localStorage 持久化存储
-let SD=JSON.parse(localStorage.getItem('sudoku_v2')||'null')||{e:{},m:{},h:{}};
-const sv=()=>localStorage.setItem('sudoku_v2',JSON.stringify(SD));
+// 持久化存储：优先用 window.storage（Claude Artifact 跨会话），降级到 localStorage
+const SAVE_KEY = 'sudoku_progress';
+let SD = {e:{},m:{},h:{}};
+
+async function loadSD() {
+  try {
+    const res = await window.storage.get(SAVE_KEY);
+    if (res && res.value) SD = JSON.parse(res.value);
+  } catch(e) {
+    // window.storage 不可用，尝试 localStorage
+    try { const v=localStorage.getItem(SAVE_KEY); if(v) SD=JSON.parse(v); } catch(_){}
+  }
+}
+
+async function sv() {
+  const data = JSON.stringify(SD);
+  try {
+    await window.storage.set(SAVE_KEY, data);
+  } catch(e) {
+    try { localStorage.setItem(SAVE_KEY, data); } catch(_){}
+  }
+}
 
 function shuf(a,rng){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor((rng||Math.random)()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
 function ok(b,r,c,n){for(let i=0;i<9;i++){if(b[r][i]===n||b[i][c]===n)return false;if(b[3*Math.floor(r/3)+Math.floor(i/3)][3*Math.floor(c/3)+i%3]===n)return false;}return true;}
 function rng4(seed){let s=seed|0;return()=>{s=(Math.imul(1664525,s)+1013904223)|0;return(s>>>0)/4294967296;};}
+
+// 计数解：找到超过 limit 个解时立即停止，返回解的数量（最多 limit+1）
+function countSolutions(b, limit){
+  // 找第一个空格
+  let br=-1,bc=-1;
+  outer: for(let r=0;r<9;r++)for(let c=0;c<9;c++)if(b[r][c]===0){br=r;bc=c;break outer;}
+  if(br===-1) return 1; // 没有空格，找到一个解
+  let cnt=0;
+  for(let n=1;n<=9;n++){
+    if(ok(b,br,bc,n)){
+      b[br][bc]=n;
+      cnt+=countSolutions(b,limit-cnt);
+      b[br][bc]=0;
+      if(cnt>limit) return cnt; // 已超过上限，提前剪枝
+    }
+  }
+  return cnt;
+}
+
+// 验证棋盘是否唯一解
+function hasUniqueSolution(puz){
+  const b=puz.map(r=>[...r]);
+  return countSolutions(b,1)===1;
+}
+
 function genLevel(diff,idx){
   const r=rng4(diff.charCodeAt(0)*997+idx*101+7);
+
+  // 生成完整解
   const sol=Array.from({length:9},()=>Array(9).fill(0));
-  (function fill(b){for(let i=0;i<9;i++)for(let j=0;j<9;j++)if(b[i][j]===0){for(const n of shuf([1,2,3,4,5,6,7,8,9],r)){if(ok(b,i,j,n)){b[i][j]=n;if(fill(b))return true;b[i][j]=0;}}return false;}return true;})(sol);
+  (function fill(b){
+    for(let i=0;i<9;i++)for(let j=0;j<9;j++)if(b[i][j]===0){
+      for(const n of shuf([1,2,3,4,5,6,7,8,9],r)){
+        if(ok(b,i,j,n)){b[i][j]=n;if(fill(b))return true;b[i][j]=0;}
+      }return false;
+    }return true;
+  })(sol);
+
+  // 逐格挖空，每次挖空后验证唯一解，不满足则跳过该格
   const puz=sol.map(x=>[...x]);
   const pos=shuf([...Array(81).keys()],r);
   let rm=0;
-  for(const p of pos){if(rm>=REMOVE[diff])break;puz[Math.floor(p/9)][p%9]=0;rm++;}
+  const target=REMOVE[diff];
+  for(const p of pos){
+    if(rm>=target) break;
+    const ri=Math.floor(p/9),ci=p%9;
+    const backup=puz[ri][ci];
+    puz[ri][ci]=0;
+    if(hasUniqueSolution(puz)){
+      rm++; // 挖空合法，保留
+    } else {
+      puz[ri][ci]=backup; // 还原：挖掉这格会导致多解
+    }
+  }
   return{sol,puz};
 }
 
@@ -407,7 +538,119 @@ document.addEventListener('keydown',e=>{
   if(G.sel&&D[e.key]){const[dr,dc]=D[e.key];G.sel=[Math.max(0,Math.min(8,G.sel[0]+dr)),Math.max(0,Math.min(8,G.sel[1]+dc))];rBoard();e.preventDefault();}
 });
 
-refreshHome();
+// ========== 存档码 ==========
+// 格式：每关用2字节编码：关卡索引(0-19) + 星级(1-3) + 时间(秒, 最大9999)
+// 编码：e[idx]:[stars],[time];m...;h...  再做 btoa 压缩
+function encodeSD() {
+  const parts = ['e','m','h'].map(d => {
+    const entries = [];
+    for (let i = 0; i < TOTAL; i++) {
+      const r = SD[d][i];
+      if (r) entries.push(`${i}:${r.s},${r.t||0}`);
+    }
+    return d + '=' + entries.join('|');
+  });
+  const raw = parts.join(';');
+  // btoa + 简单 base62 友好处理
+  try { return btoa(unescape(encodeURIComponent(raw))).replace(/=/g,''); }
+  catch(e) { return raw; }
+}
+
+function decodeSD(code) {
+  let raw = code.trim();
+  // 尝试 base64 解码
+  try {
+    // 补齐 padding
+    const pad = raw.length % 4;
+    if (pad) raw += '='.repeat(4 - pad);
+    raw = decodeURIComponent(escape(atob(raw)));
+  } catch(e) { /* 非 base64，当作明文 */ }
+
+  const result = {e:{}, m:{}, h:{}};
+  const diffs = raw.split(';');
+  for (const part of diffs) {
+    const eq = part.indexOf('=');
+    if (eq < 0) continue;
+    const d = part.slice(0, eq);
+    if (!result[d]) continue;
+    const entries = part.slice(eq+1).split('|');
+    for (const entry of entries) {
+      if (!entry) continue;
+      const [idxStr, rest] = entry.split(':');
+      const [sStr, tStr] = (rest||'').split(',');
+      const idx = parseInt(idxStr), s = parseInt(sStr), t = parseInt(tStr)||0;
+      if (!isNaN(idx) && !isNaN(s) && idx >= 0 && idx < TOTAL && s >= 1 && s <= 3) {
+        result[d][idx] = {s, t};
+      }
+    }
+  }
+  return result;
+}
+
+function openSaveModal() {
+  // 生成最新存档码
+  document.getElementById('exportCode').textContent = encodeSD();
+  document.getElementById('importInput').value = '';
+  document.getElementById('importHint').textContent = '导入后将覆盖当前进度';
+  document.getElementById('importHint').style.color = 'var(--muted)';
+  switchTab('export');
+  document.getElementById('saveModal').classList.add('show');
+}
+
+function closeSaveModal(e) {
+  if (e && e.target !== document.getElementById('saveModal')) return;
+  document.getElementById('saveModal').classList.remove('show');
+}
+
+function switchTab(tab) {
+  document.getElementById('tabExport').classList.toggle('active', tab==='export');
+  document.getElementById('tabImport').classList.toggle('active', tab==='import');
+  document.getElementById('panelExport').classList.toggle('active', tab==='export');
+  document.getElementById('panelImport').classList.toggle('active', tab==='import');
+}
+
+function copyCode() {
+  const code = document.getElementById('exportCode').textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(code).then(() => showToast('已复制到剪贴板 ✓'));
+  } else {
+    // iOS Safari fallback
+    const ta = document.createElement('textarea');
+    ta.value = code; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('已复制到剪贴板 ✓');
+  }
+}
+
+function importCode() {
+  const code = document.getElementById('importInput').value.trim();
+  if (!code) { showToast('请先粘贴存档码'); return; }
+  try {
+    const newSD = decodeSD(code);
+    // 验证：至少有一个有效关卡记录
+    const total = ['e','m','h'].reduce((a,d)=>a+Object.keys(newSD[d]).length,0);
+    if (total === 0) throw new Error('no data');
+    SD = newSD;
+    sv();
+    refreshHome();
+    closeSaveModal();
+    showToast(`导入成功，共恢复 ${total} 关记录 ✓`);
+  } catch(e) {
+    document.getElementById('importHint').textContent = '存档码格式有误，请检查后重试';
+    document.getElementById('importHint').style.color = 'var(--hard)';
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// 异步初始化：先加载存档再渲染首页
+loadSD().then(() => refreshHome());
 </script>
 </body>
 </html>
